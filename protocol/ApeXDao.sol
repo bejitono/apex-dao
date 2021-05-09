@@ -155,6 +155,32 @@ contract ApeXDao is ReentrancyGuard {
         _withdrawStake(pool, poolId, msg.sender, liquidatedAmount);
     }
     
+    /* ============ External Getters ============ */
+    
+    function getPoolToken(uint256 poolId) external view onlyInitialized(poolId) returns (address) {
+        return pools[poolId].poolToken;
+    }
+    
+    function getPoolBalance(uint256 poolId) external view onlyInitialized(poolId) returns (uint256) {
+        return pools[poolId].poolBalance;
+    }
+    
+    function getPoolThreshold(uint256 poolId) public view onlyInitialized(poolId) returns (uint256) {
+        return pools[poolId].executionThreshold;
+    }
+    
+    function getPoolState(uint256 poolId) external view onlyInitialized(poolId) returns (State) {
+        return pools[poolId].state;
+    }
+    
+    function checkPoolIsInitialized(uint256 poolId) external view returns (bool) {
+        return poolInitialized[poolId];
+    }
+    
+    function getPoolCount() external view returns (uint256) {
+        return poolCount;
+    }
+    
     /* ========== Mutative Functions ========== */
     
     function _createPool(Pool memory pool) internal {
