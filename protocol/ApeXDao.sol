@@ -99,6 +99,17 @@ contract ApeXDao is ReentrancyGuard {
         return poolCount - 1;
     }
     
+    function stake(uint256 poolId, uint256 amount) external nonReentrant onlyInitialized(poolId) {
+        Pool storage pool = pools[poolId];
+        
+        require(amount > 0, "Cannot stake 0");
+        require(pool.state == State.open, "Pool has been deployed or canceled");
+        
+        _addStake(pool, poolId, msg.sender, amount);
+        _updateStateIfNeeded(pool, poolId);
+    }
+    
+    
     /* ========== Mutative Functions ========== */
     
     function _createPool(Pool memory pool) internal {
@@ -106,5 +117,19 @@ contract ApeXDao is ReentrancyGuard {
         poolInitialized[poolCount] = true;
         poolCount = poolCount.add(1);
         emit PoolCreated(poolCount - 1, pool.poolToken, pool.investmentToken);
+    }
+    
+    function _addStake(Pool storage pool, uint256 poolId, address user, uint256 amount) internal {
+        IERC20(pool.poolToken).safeTransferFrom(user, address(this), amount);
+        pool.poolBalance = pool.poolBalance.add(amount);
+        userPoolBalances[user][poolId] = userPoolBalances[user][poolId].add(amount);
+        emit StakeAdded(poolId, user, amount);
+    }
+    
+    function _updateStateIfNeeded(Pool storage pool, uint256 poolId) internal {
+        if (pool.poolBalance >= pool.executionThreshold) {
+            pool.state = State.readyToDeploy;
+            emit PoolStateChanged(poolId, pool.state);
+        }
     }
 }
