@@ -32,6 +32,20 @@ contract ApeXDao is ReentrancyGuard {
         canceled
     }
 
+    /* ============ Events ============ */
+    
+    event PoolStateChanged(uint256 indexed poolId, State indexed state);
+    event PoolCreated(uint256 indexed poolId, address indexed poolToken, address indexed investmentToken);
+    event StakeAdded(uint256 indexed poolId, address indexed user, uint256 amount);
+    event StakeWithdrawn(uint256 indexed poolId, address indexed user, uint256 amount);
+
+    /* ============ Modifiers ============ */
+    
+    modifier onlyInitialized(uint256 poolId) {
+        require(poolInitialized[poolId], "Pool does not exist");
+        _;
+    }
+
     /* ============ State Variables ============ */
     
     ISwapAdapter swapAdapter;
