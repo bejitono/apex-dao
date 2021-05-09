@@ -130,6 +130,31 @@ contract ApeXDao is ReentrancyGuard {
         _deploy(pool, poolId);
     }
     
+    /**
+   * For now this liquidates the entire pool
+   */
+    function liquidate(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
+        Pool storage pool = pools[poolId];
+        
+        // TODO: check for conditions that allow liquidation
+        // if (block.timestamp >= pool.periodFinish) { };
+        require(pool.state == State.deployed, "Pool has not been deployed yet");
+        require(pool.investmentBalance > 0, "Pool has no invested assets to liquidate");
+        
+        _liquidate(pool, poolId);
+    }
+    
+    function withdrawLiquidatedAssets(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
+        Pool storage pool = pools[poolId];
+        uint256 liquidatedAmount = userPoolBalances[msg.sender][poolId];
+        
+        require(pool.state == State.liquidated, "Pool has not been liquidated yet");
+        require(pool.poolBalance >= liquidatedAmount, "Pool has insufficient balance");
+        require(liquidatedAmount > 0, "User has not assets to withdraw");
+        
+        _withdrawStake(pool, poolId, msg.sender, liquidatedAmount);
+    }
+    
     /* ========== Mutative Functions ========== */
     
     function _createPool(Pool memory pool) internal {
@@ -164,6 +189,14 @@ contract ApeXDao is ReentrancyGuard {
         pool.investmentBalance = investedAmount;
         pool.poolBalance = 0;
         pool.state = State.deployed;
+        emit PoolStateChanged(poolId, pool.state);
+    }
+    
+    function _liquidate(Pool storage pool, uint256 poolId) internal {
+        // TODO: Liquidate assets
+        pool.investmentBalance = 0;
+        // pool.poolBalance = liquidatedAmount;
+        pool.state = State.liquidated;
         emit PoolStateChanged(poolId, pool.state);
     }
     
