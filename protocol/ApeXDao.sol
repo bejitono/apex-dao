@@ -109,6 +109,16 @@ contract ApeXDao is ReentrancyGuard {
         _updateStateIfNeeded(pool, poolId);
     }
     
+    function withdrawStake(uint256 poolId, uint256 amount) external nonReentrant onlyInitialized(poolId) {
+        Pool storage pool = pools[poolId];
+        
+        require(amount > 0, "Cannot withdraw 0");
+        require(pool.state == State.open, "Pool has been deployed or canceled");
+        require(userPoolBalances[msg.sender][poolId] >= amount, "User has insufficient balance");
+        require(pool.poolBalance >= amount, "Pool has insufficient balance");
+
+        _withdrawStake(pool, poolId, msg.sender, amount);
+    }
     
     /* ========== Mutative Functions ========== */
     
@@ -124,6 +134,13 @@ contract ApeXDao is ReentrancyGuard {
         pool.poolBalance = pool.poolBalance.add(amount);
         userPoolBalances[user][poolId] = userPoolBalances[user][poolId].add(amount);
         emit StakeAdded(poolId, user, amount);
+    }
+    
+    function _withdrawStake(Pool storage pool, uint256 poolId, address user, uint256 amount) internal {
+        IERC20(pool.poolToken).safeTransfer(user, amount);
+        pool.poolBalance = pool.poolBalance.sub(amount);
+        userPoolBalances[user][poolId] = userPoolBalances[user][poolId].sub(amount);
+        emit StakeWithdrawn(poolId, user, amount);
     }
     
     function _updateStateIfNeeded(Pool storage pool, uint256 poolId) internal {
