@@ -120,6 +120,16 @@ contract ApeXDao is ReentrancyGuard {
         _withdrawStake(pool, poolId, msg.sender, amount);
     }
     
+    function deploy(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
+        Pool storage pool = pools[poolId];
+        
+        require(pool.poolBalance > 0, "Cannot deploy pool balance of 0");
+        require(pool.poolBalance >= pool.executionThreshold, "Threshold has not been reached yet");
+        require(pool.state == State.readyToDeploy, "Pool is not ready to be deployed");
+        
+        _deploy(pool, poolId);
+    }
+    
     /* ========== Mutative Functions ========== */
     
     function _createPool(Pool memory pool) internal {
@@ -141,6 +151,20 @@ contract ApeXDao is ReentrancyGuard {
         pool.poolBalance = pool.poolBalance.sub(amount);
         userPoolBalances[user][poolId] = userPoolBalances[user][poolId].sub(amount);
         emit StakeWithdrawn(poolId, user, amount);
+    }
+    
+    function _deploy(Pool storage pool, uint256 poolId) internal {
+        uint256 investedAmount = swapAdapter.swapExactTokensForTokens(
+            pool.poolToken,
+            pool.investmentToken,
+            pool.poolBalance,
+            0, // TODO: Check conventional way of adding minAmountOut
+            false
+        );
+        pool.investmentBalance = investedAmount;
+        pool.poolBalance = 0;
+        pool.state = State.deployed;
+        emit PoolStateChanged(poolId, pool.state);
     }
     
     function _updateStateIfNeeded(Pool storage pool, uint256 poolId) internal {
