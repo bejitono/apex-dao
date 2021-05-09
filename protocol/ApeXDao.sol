@@ -68,4 +68,43 @@ contract ApeXDao is ReentrancyGuard {
         swapAdapter = _swapAdapter;
     }
     
+    /* ============ External Functions ============ */
+    
+    /** 
+     * @notice Creates a new pool
+     * @param poolToken The address of the token that is pooled
+     * @param investmentToken The address of the token that will be invested in
+     * @param executionThreshold The threshold amount at which the pool will deploy the pooled assets
+     * @return The pool Id for the newly created pool
+     */
+    function createPool(
+        address poolToken,
+        address investmentToken,
+        uint256 executionThreshold
+    ) external nonReentrant returns (uint256) {
+        require(poolToken != address(0), "Token address can not be zero");
+        require(investmentToken != address(0), "Token address can not be zero");
+        require(executionThreshold > 0, "Threshold must be higher than 0");
+        
+        Pool memory pool = Pool({
+            poolToken: poolToken,
+            poolBalance: 0,
+            investmentToken: investmentToken,
+            investmentBalance: 0,
+            executionThreshold: executionThreshold,
+            state: State.open
+        });
+        
+        _createPool(pool);
+        return poolCount - 1;
+    }
+    
+    /* ========== Mutative Functions ========== */
+    
+    function _createPool(Pool memory pool) internal {
+        pools[poolCount] = pool;
+        poolInitialized[poolCount] = true;
+        poolCount = poolCount.add(1);
+        emit PoolCreated(poolCount - 1, pool.poolToken, pool.investmentToken);
+    }
 }
