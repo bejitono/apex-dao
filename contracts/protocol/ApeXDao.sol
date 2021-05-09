@@ -59,11 +59,6 @@ contract ApeXDao is ReentrancyGuard {
     
     /* ============ Constructor ============ */
     
-    /**
-     * Set state variables
-     *
-     * @param _swapAdapter Swap adapter handling swaps
-     */
     constructor(ISwapAdapter _swapAdapter) {
         swapAdapter = _swapAdapter;
     }
@@ -99,6 +94,12 @@ contract ApeXDao is ReentrancyGuard {
         return poolCount - 1;
     }
     
+    /** 
+     * @notice Creates a new pool
+     * @dev Will automatically check whether threshold has been reached. If reached, it will set the status as ready to deploy.
+     * @param poolId The ID of the pool
+     * @param amount The amount to be staked to the pool
+     */
     function stake(uint256 poolId, uint256 amount) external nonReentrant onlyInitialized(poolId) {
         Pool storage pool = pools[poolId];
         
@@ -109,6 +110,12 @@ contract ApeXDao is ReentrancyGuard {
         _updateStateIfNeeded(pool, poolId);
     }
     
+    /** 
+     * @notice Withdraws the stake if it hasn't yet been deployed
+     * @dev This withdrawal method is only to withdraw the staked amount before it was deployed
+     * @param poolId The ID of the pool
+     * @param amount The amount to be withdrawn from the pool
+     */
     function withdrawStake(uint256 poolId, uint256 amount) external nonReentrant onlyInitialized(poolId) {
         Pool storage pool = pools[poolId];
         
@@ -120,6 +127,10 @@ contract ApeXDao is ReentrancyGuard {
         _withdrawStake(pool, poolId, msg.sender, amount);
     }
     
+    /** 
+     * @notice Deploy the pool by swapping the pool to the investment token
+     * @param poolId The ID of the pool
+     */
     function deploy(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
         Pool storage pool = pools[poolId];
         
@@ -130,9 +141,11 @@ contract ApeXDao is ReentrancyGuard {
         _deploy(pool, poolId);
     }
     
-    /**
-   * For now this liquidates the entire pool
-   */
+    /** 
+     * @notice Liquidates the invested pool by swapping back to the initial pool token
+     * @dev TODO: define conditions for liquidation (e.g. time-based)
+     * @param poolId The ID of the pool
+     */
     function liquidate(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
         Pool storage pool = pools[poolId];
         
@@ -144,6 +157,10 @@ contract ApeXDao is ReentrancyGuard {
         _liquidate(pool, poolId);
     }
     
+    /** 
+     * @notice Withdraws the liquidated proceeds according to the initial share in the pool
+     * @param poolId The ID of the pool
+     */
     function withdrawLiquidatedAssets(uint256 poolId) external nonReentrant onlyInitialized(poolId) {
         Pool storage pool = pools[poolId];
         uint256 liquidatedAmount = userPoolBalances[msg.sender][poolId];
